@@ -9,7 +9,8 @@ rootfs_dir = '/tmp/rpi3_dir/'
 boot_dir = '/tmp/rpi3_dir/boot'
 
 def prepare_rpi_disk():
-    disk_image = 'disk_image.img'
+    disk_image = '{}/{}'.format(os.getcwd(), 'disk_image.img')
+    print(disk_image)
     # dd if=/dev/zero of=rpi3_disk.img bs=1M count=1024
     print('creating {}'.format(disk_image))
     make_disk = subprocess.check_output(['/usr/bin/sudo', 'dd', 'if=/dev/zero', 'of=disk_image.img', 'bs=1M', 'count=1256'])
@@ -23,7 +24,7 @@ def prepare_rpi_disk():
     # sudo losetup -f -P 2019-07-10-raspbian-buster-lite.img
     print("Mounting '{}' as /dev/loop device".format(disk_image))
     # sudo losetup -f -P disk_image.img --show
-    losetup_connect = subprocess.check_output(['/usr/bin/sudo', 'losetup', '-f', '-P', 'disk_image.img', '--show'])
+    losetup_connect = subprocess.check_output(['/usr/bin/sudo', 'losetup', '-f', '-P', disk_image, '--show'])
     lodevice = losetup_connect.decode('utf-8').strip()
     print('loopback device connected {}'.format(lodevice))
     print('making fs for loopback partiotions')
@@ -52,12 +53,12 @@ def find_repos(release, arch):
     return repo_file.group(0)
 
 def make_chroot_user_password(root_user = 'root', root_password = 'root', user = 'rosa', user_password = 'rosa'):
-    subprocess.check_output(['/usr/bin/sudo', 'usesradd', '{}'.format(user), '-p', '{}'.format(user_password), '-G', 'sudo,wheel', '-m'])
-    subprocess.check_output(['/usr/bin/sudo', 'usesradd', '{}'.format(root_user), '-p', '{}'.format(root_password), '-G', 'root', '-m'])
+    subprocess.check_output(['/usr/bin/sudo', 'usesradd', user, '-p', user_password, '-G', 'sudo,wheel', '-m'])
+    subprocess.check_output(['/usr/bin/sudo', 'usesradd', root_user, '-p', root_password, '-G', 'root', '-m'])
 
 def make_chroot(release, arch):
     repo_pkg = find_repos(release, arch)
-    pkgs = 'NetworkManager less systemd-units openssh-server systemd psmisc gptfdisk timezone dnf sudo usbutils passwd kernel-rpi3 kernel-rpi3-modules locales-en basesystem-minimal'
+    pkgs = 'NetworkManager less systemd-units openssh-server systemd psmisc gptfdisk timezone dnf sudo usbutils passwd locales-en basesystem-minimal'
     print(rootfs_dir)
     subprocess.check_output(['/usr/bin/sudo', 'rpm', '-Uvh', '--ignorearch', '--nodeps', repo_pkg, '--root', rootfs_dir])
     subprocess.check_output(['/usr/bin/sudo', 'dnf', '-y', 'install', '--nogpgcheck', '--installroot=' + rootfs_dir, '--releasever=' + release, '--forcearch=' + arch] + pkgs.split())
@@ -71,5 +72,5 @@ def make_chroot(release, arch):
     umount_root = subprocess.check_output(['/usr/bin/sudo', 'umount', rootfs_dir])
 
 
-# prepare_rpi_disk()
+prepare_rpi_disk()
 make_chroot('2019.1', 'x86_64')
