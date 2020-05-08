@@ -47,10 +47,13 @@ def find_repos(release, arch):
     resp = requests.get(url)
     if resp.status_code == 404:
         print('bad url: {}'.format(url))
-    repo_file = re.search('(?<=href=")rosa-repos-.*.aarch64.rpm(?=")', resp.text)
+    repo_file = re.search('(?<=href=")rosa-repos-.*.{}.rpm(?=")'.format(arch), resp.text)
     subprocess.check_output(['/usr/bin/wget', url + repo_file.group(0)])
     return repo_file.group(0)
 
+def make_chroot_user_password(root_user = 'root', root_password = 'root', user = 'rosa', user_password = 'rosa'):
+    subprocess.check_output(['/usr/bin/sudo', 'usesradd', '{}'.format(user), '-p', '{}'.format(user_password), '-G', 'sudo,wheel', '-m'])
+    subprocess.check_output(['/usr/bin/sudo', 'usesradd', '{}'.format(root_user), '-p', '{}'.format(root_password), '-G', 'root', '-m'])
 
 def make_chroot(release, arch):
     repo_pkg = find_repos(release, arch)
@@ -60,10 +63,13 @@ def make_chroot(release, arch):
     subprocess.check_output(['/usr/bin/sudo', 'dnf', '-y', 'install', '--nogpgcheck', '--installroot=' + rootfs_dir, '--releasever=' + release, '--forcearch=' + arch] + pkgs.split())
     # copy fstab
     subprocess.check_output(['/usr/bin/sudo', 'cp', '-fv', 'fstab.template', rootfs_dir + '/etc/fstab'])
+    # make chroot users
+    make_chroot_user_password()
     # umount tmpfs first
     umount_tmpfs = subprocess.check_output(['/usr/bin/sudo', 'umount', rootfs_dir + '/var/cache/dnf'])
     umount_boot = subprocess.check_output(['/usr/bin/sudo', 'umount', boot_dir])
     umount_root = subprocess.check_output(['/usr/bin/sudo', 'umount', rootfs_dir])
 
-prepare_rpi_disk()
-make_chroot('2019.1', 'aarch64')
+
+# prepare_rpi_disk()
+make_chroot('2019.1', 'x86_64')
