@@ -10,11 +10,10 @@ boot_dir = '/tmp/rpi3_dir/boot'
 
 def prepare_rpi_disk():
     disk_image = '{}/{}'.format(os.getcwd(), 'disk_image.img')
-    print(disk_image)
     # dd if=/dev/zero of=rpi3_disk.img bs=1M count=1024
     print('creating {}'.format(disk_image))
     make_disk = subprocess.check_output(['/usr/bin/sudo', 'dd', 'if=/dev/zero', 'of=disk_image.img', 'bs=1M', 'count=1256'])
-    command = ['sudo', '/sbin/fdisk', disk_image]
+    command = ['/usr/bin/sudo', '/sbin/fdisk', disk_image]
     p = subprocess.Popen(command, stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
@@ -52,7 +51,12 @@ def find_repos(release, arch):
     subprocess.check_output(['/usr/bin/wget', url + repo_file.group(0)])
     return repo_file.group(0)
 
-def make_chroot_user_password(root_user = 'root', root_password = 'root', user = 'rosa', user_password = 'rosa'):
+def make_chroot_user_password(root_user = 'root', user = 'rosa'):
+    print('Enter root user password: ')
+    root_password = input()
+    print('Enter rosa user password: ')
+    user_password = input()
+
     subprocess.check_output(['/usr/bin/sudo', 'usesradd', user, '-p', user_password, '-G', 'sudo,wheel', '-m'])
     subprocess.check_output(['/usr/bin/sudo', 'usesradd', root_user, '-p', root_password, '-G', 'root', '-m'])
 
