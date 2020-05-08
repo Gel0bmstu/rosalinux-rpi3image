@@ -24,7 +24,7 @@ def prepare_rpi_disk():
     # sudo losetup -f -P 2019-07-10-raspbian-buster-lite.img
     print("Mounting '{}' as /dev/loop device".format(disk_image))
     # sudo losetup -f -P disk_image.img --show
-    losetup_connect = subprocess.check_output(['/usr/bin/sudo', 'losetup', '-f', '-P', '--show'], disk_image)
+    losetup_connect = subprocess.check_output(['/usr/bin/sudo', 'losetup', '-f', '-P', '--show', disk_image])
     lodevice = losetup_connect.decode('utf-8').strip()
     print('loopback device connected {}'.format(lodevice))
     print('making fs for loopback partiotions')
