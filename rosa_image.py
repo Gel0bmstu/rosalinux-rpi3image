@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import sys
@@ -51,14 +51,27 @@ def find_repos(release, arch):
     subprocess.check_output(['/usr/bin/wget', url + repo_file.group(0)])
     return repo_file.group(0)
 
-def make_chroot_user_password(root_user = 'root', user = 'rosa'):
-    print('Enter root user password: ')
-    root_password = input()
-    print('Enter rosa user password: ')
-    user_password = input()
+def create_chroot_user(name = 'root', password = 'root', groups = 'sudo'):
+    user_exist_status = subprocess.run(['id', '-u', name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    subprocess.check_output(['/usr/bin/sudo', 'usesradd', user, '-p', user_password, '-G', 'sudo,wheel', '-m'])
-    subprocess.check_output(['/usr/bin/sudo', 'usesradd', root_user, '-p', root_password, '-G', 'root', '-m'])
+    if user_exist_status.returncode != 0:
+        print('Creating new user {}'.format(name))
+
+        if name == 'root':
+            subprocess.check_output(['/usr/bin/sudo', 'useradd', name, '-p', password, '-G', 'root,' + groups, '-m'])
+        else:
+            subprocess.check_output(['/usr/bin/sudo', 'useradd', name, '-p', password, '-G', groups, '-m'])
+
+        p = subprocess.Popen(['/usr/bin/sudo', 'passwd', name],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+    
+        p.communicate(input='{}\n{}'.format(password, password).encode())
+        print('User {} created successfully'.format(name))
+    else:
+        print(u'User {} already exist'.format(name))
+        return
 
 def make_chroot(release, arch):
     repo_pkg = find_repos(release, arch)
@@ -69,7 +82,8 @@ def make_chroot(release, arch):
     # copy fstab
     subprocess.check_output(['/usr/bin/sudo', 'cp', '-fv', 'fstab.template', rootfs_dir + '/etc/fstab'])
     # make chroot users
-    make_chroot_user_password()
+    create_chroot_user('root', 'root')
+    create_chroot_user('rosa', 'rosa')
     # umount tmpfs first
     umount_tmpfs = subprocess.check_output(['/usr/bin/sudo', 'umount', rootfs_dir + '/var/cache/dnf'])
     umount_boot = subprocess.check_output(['/usr/bin/sudo', 'umount', boot_dir])
