@@ -48,14 +48,14 @@ def find_repos(release, arch):
     if resp.status_code == 404:
         print('bad url: {}'.format(url))
     repo_file = re.search(
-        '(?<=href=")openmandriva-repos-.*.aarch64.rpm(?=")', resp.text)
+        '(?<=href=")openmandriva-repos-.*.{}.rpm(?=")'.format(arch), resp.text)
     subprocess.check_output(['/usr/bin/wget', url + repo_file.group(0)])
     return repo_file.group(0)
 
 
 def make_chroot(release, arch):
     repo_pkg = find_repos(release, arch)
-    pkgs = 'NetworkManager less vim-enhanced systemd-console systemd-coredump systemd-cryptsetup systemd-analyze systemd-hwdb systemd-polkit systemd-boot psmisc gptfdisk timezone dnf sudo usbutils passwd kernel-rpi3 kernel-rpi3-modules locales-en'
+    pkgs = 'NetworkManager less vim-enhanced systemd-console systemd-coredump systemd-cryptsetup systemd-analyze systemd-hwdb systemd-polkit systemd-boot psmisc gptfdisk timezone dnf sudo usbutils passwd locales-en'
     print(rootfs_dir)
     subprocess.check_output(['/usr/bin/sudo', 'rpm', '-Uvh', '--ignorearch', '--nodeps', repo_pkg, '--root', rootfs_dir])
     subprocess.check_output(['/usr/bin/sudo', 'dnf', '-y', 'install', '--nogpgcheck', '--installroot=' + rootfs_dir, '--releasever=' + release, '--forcearch=' + arch] + pkgs.split())
@@ -69,4 +69,4 @@ def make_chroot(release, arch):
     umount_root = subprocess.check_output(['/usr/bin/sudo', 'umount', rootfs_dir])
 
 prepare_rpi_disk()
-make_chroot('cooker', 'aarch64')
+make_chroot('rosa2019.1', 'x86_64')
